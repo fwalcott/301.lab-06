@@ -54,7 +54,7 @@ function handleLocation(request, response) {
   }
 }
 
-/* function Location(city, geoData) {
+ function Location(city, geoData) {
   this.search_query = city;
   this.formatted_query = geoData[0].display_name;
   this.latitude = geoData[0].lat;
