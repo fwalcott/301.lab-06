@@ -28,7 +28,13 @@ function aboutUsHandler(request, response) {
 }
 
 // API Routes
-app.get('/location', handleLocation);
+app.get('/location', handleLocation); {
+  let city = request.query.city;
+  let data = require('./data/location.json')[0];
+  let location = new Location(data, city);
+  response.send(location);
+}; 
+
 app.get('/restaurants', handleRestaurants);
 
 app.use('*', notFoundHandler);
@@ -48,12 +54,12 @@ function handleLocation(request, response) {
   }
 }
 
-function Location(city, geoData) {
+/* function Location(city, geoData) {
   this.search_query = city;
   this.formatted_query = geoData[0].display_name;
   this.latitude = geoData[0].lat;
   this.longitude = geoData[0].lon;
-}
+}  */
 
 function handleRestaurants(request, response) {
   try {
@@ -70,11 +76,19 @@ function handleRestaurants(request, response) {
   }
 }
 
+function Location(obj, query){
+  this.lat = obj.lat;
+  this.lon = obj.lon;
+  this.search_query = query;
+  this.location = obj.display_name;
+}
+
 function Restaurant(entry) {
   this.restaurant = entry.restaurant.name;
   this.cuisines = entry.restaurant.cuisines;
   this.locality = entry.restaurant.location.locality;
-}
+} 
+
 
 function notFoundHandler(request, response) {
   response.status(404).send('huh?');
