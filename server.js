@@ -59,7 +59,7 @@ function handleLocation(request, response) {
   this.formatted_query = geoData[0].display_name;
   this.latitude = geoData[0].lat;
   this.longitude = geoData[0].lon;
-}  */
+}  
 
 function handleRestaurants(request, response) {
   try {
