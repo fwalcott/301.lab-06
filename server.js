@@ -105,7 +105,7 @@ function handleRestaurants(request, response) {
   this.restaurant = entry.restaurant.name;
   this.cuisines = entry.restaurant.cuisines;
   this.locality = entry.restaurant.location.locality; */
-} 
+//} 
 
 
 function notFoundHandler(request, response) {
