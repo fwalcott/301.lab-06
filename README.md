@@ -22,3 +22,16 @@ Start time: 5 pm___
 Finish time: 6 pm_ 
 
 Actual time needed to complete: 4 hours complete up until feature 4
+
+Update 10/22/2020 
+
+Number and name of feature: Lab 06 version 1.0.4_______________________
+
+Estimate of time needed to complete: 3 hour_
+
+Start time: 8 pm___
+
+Finish time: 11 pm_ 
+
+Actual time needed to complete: 3 hours complete 
+
