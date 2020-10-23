@@ -1,119 +1,133 @@
 'use strict';
 
-// Load Environment Variables from the .env file
+// Load Environment Variables from the .env file 
+
 require('dotenv').config();
 
-// Application Dependencies
+// Application Dependencies 
+
 const express = require('express');
 const cors = require('cors');
+const superagent = require('superagent'); 
+const { response, request } = require('express');
 
+// Application Setup 
 
-// Application Setup
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 const app = express();
 app.use(cors());
 
-app.get('/', (request, response) => {
-  response.send('Home Page!');
-});
+//API Routes
 
-app.get('/bad', (request, response) => {
-  throw new Error('poo');
-});
-
-// The callback can be a separate function. Really makes things readable
-app.get('/about', aboutUsHandler);
-
-function aboutUsHandler(request, response) {
-  response.status(200).send('About Us Page');
-}
-
-// API Routes
 app.get('/location', handleLocation);
-app.get('/weather', handleWeather); 
+app.get('/weather', handleWeather);  
+app.get('/trails', handleTrails)
 
-  
-//Location Handler
-function handleLocation(req, res) {
-  try {
-    const geoData = require('./server/data/location.json');
-    const city = req.query.city;
-    const locationData = new Location(city, geoData);
-    res.send(locationData);
-  }
-  catch (error) {
-    console.log('ERROR', error);
-    response.status(500).send('So sorry, something went wrong.');
-  }
+//app.use('*', notFoundHandler)
+
+//Location Handler 
+
+function handleLocation(request, response) {
+  let city = request.query.city; 
+  let key = process.env.GEOCODE_API_KEY; 
+
+  const URL = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`;
+
+  superagent.get(URL) 
+  .then(data => {
+    let location = new Location(data.body[0], city); 
+    response.status(200).send(location);
+  }); 
+} 
+
+//Weather Handler
+
+function handleWeather(request, response){
+  let parameters = {
+    key: process.env.WEATHER_API_KEY,
+    lat: request.query.latitude, 
+    lon: request.query.longitude, 
+    days: 8 
+  }; 
+
+  const URL = `https://api.weatherbit.io/v2.0/forecast/daily`; 
+  superagent.get(URL) 
+  .query(parameters) 
+  .then(value => {
+    let forecast = value.body; 
+    let weatherArr = forecast.data.map(daily => {
+      return new Weather(daily); 
+    }); 
+    response.status(200).send(weatherArr);
+  }) 
+  .catch(error => {
+    response.status(500).send('Something went wrong !!!!'); 
+    console.log(error);
+  });
 }
-//Weather Handler 
-function handleWeather (req, res){
-  try {
-    const forecastArr = []; 
-    let forcast = require('./data/weather.json'); 
-    forecast.data.forEach(value => {
-      forecastArr.push(new Weather(value));
-    });  
-    response.send(forecastArr);
-  }
-  catch(error){
-      error500();
-    }
-  }
 
+//Trails Handler 
 
-// app.get('/restaurants', handleRestaurants);
+function handleTrails(request, response){
+  let parameters = {
+    key: process.env.TRAIL_API_KEY, 
+    lat: request.query.latitude, 
+    lon: request.query.longitude,
+    maxResults: 10
+  }; 
 
-app.use('*', notFoundHandler);
-
+  const URL = `https://www.hikingproject.com/data/get-trails`; 
+  superagent.get(URL) 
+  .query(parameters) 
+  .then(value => {
+    let trails = value.body.trails.map(newTrail => {
+      return new Trail(newTrail);
+    }); 
+    response.status(200).send(trails);
+  })
+    .catch(error => {
+    response.status(500).send('Sorry, Something went wrong !'); 
+    console.log(error);
+    });
+}
 
 //Constructor Functions  
 
-//Location Function
-function Location(city, geoData) {
-  this.search_query = city;
-  this.formatted_query = geoData[0].display_name;
-  this.latitude = geoData[0].lat;
-  this.longitude = geoData[0].lon;
+//Location Constructor 
+
+function Location(obj, query) {
+  this.search_query = query;
+  this.formatted_query = obj.display_name;
+  this.latitude = obj.lat;
+  this.longitude = obj.lon;
 }   
 
-//Weather Function
+//Weather Constructor 
+
 function Weather(obj){
   this.forecast= obj.weather.description;
-  this.time = new Data(obj.valid_date).toDateString();                     
+  this.time = new Date(obj.valid_date).toDateString();                     
 } 
-  
 
-/* 
-function handleRestaurants(request, response) {
-  try {
-    const data = require('./server/data/restaurants.json');
-    const restaurantData = [];
-    data.nearby_restaurants.forEach(entry => {
-      restaurantData.push(new Restaurant(entry));
-    });
-    response.send(restaurantData);
-  }
-  catch (error) {
-    console.log('ERROR', error);
-    response.status(500).send('So sorry, something went wrong.');
-  }
-} */
+//Trails Constructor 
 
-
-/* function Restaurant(entry) {
-  this.restaurant = entry.restaurant.name;
-  this.cuisines = entry.restaurant.cuisines;
-  this.locality = entry.restaurant.location.locality; */
-//} 
-
-
-function notFoundHandler(request, response) {
-  response.status(404).send('huh?');
+function Trail(obj){
+  this.name = obj.name; 
+  this.location = obj.location; 
+  this.length = obj.lenght; 
+  this.stars = obj.stars; 
+  this.star_votes = obj.starVotes;
+  this.summary = obj.summary; 
+  this.trail_url = obj.url; 
+  this.conditions = obj.conditionStatus; 
+  this.condition_date = obj.conditionDate.split(' ')[0]; 
+  this.condition_time = obj.conditionDate.split(' ')[1]; 
 }
 
-function error500(){
-  return response.status(500).send('Sorry, something went wrong, ...')};
+
 
 // Make sure the server is listening for requests
-app.listen(PORT, () => console.log(`App is listening on ${PORT}`));
+
+app.listen(PORT, () => {
+  console.log(`It's Alive!`);
+});
