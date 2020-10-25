@@ -35,3 +35,15 @@ Finish time: 11 pm_
 
 Actual time needed to complete: 3 hours complete 
 
+Number and name of feature: Lab 08 version 1.0.5_______________________
+
+Estimate of time needed to complete: 4 hours_
+
+Start time: 5 pm___
+
+Finish time: 8 pm_ 
+
+Actual time needed to complete: 3 hours complete 
+
+
+
