@@ -10,12 +10,14 @@ const express = require('express');
 const cors = require('cors');
 const superagent = require('superagent'); 
 const { response, request } = require('express');
+const pg = reqiure('pg') 
 
 // Application Setup 
 
 const PORT = process.env.PORT || 3000;
 const app = express();
-app.use(cors());
+app.use(cors()); 
+const cilent = new pg.Client(process.env.DATABase_URL);
 
 //API Routes
 
@@ -23,7 +25,7 @@ app.get('/location', handleLocation);
 app.get('/weather', handleWeather);  
 app.get('/trails', handleTrails)
 
-//app.use('*', notFoundHandler)
+app.use('*', notFoundHandler)
 
 //Location Handler 
 
@@ -31,14 +33,29 @@ function handleLocation(request, response) {
   let city = request.query.city; 
   let key = process.env.GEOCODE_API_KEY; 
 
-  const URL = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`;
-
-  superagent.get(URL) 
-  .then(data => {
-    let location = new Location(data.body[0], city); 
-    response.status(200).send(location);
-  }); 
-} 
+const checkSQL = `SELECT * FROM loaction`; 
+clientInformation.query(checkSQL) 
+.then(data => 
+  let dataCheck = data.rows.filter(value => valuse.search_query === city);
+  if (dataCheck[0]){
+response.status(200).send(dataCheck[0}); 
+   } else {
+    const URL = `https://us1.locationiq.com/v1/search.php?key=${key}&q=${city}&format=json`; 
+    superagent.get(URL) 
+    .then(data => {
+      let location = new Location(data.body[0], city); 
+      response.status(200).send(location);
+      const SQL = 'INSERT INTO location (search_query, formatted_query, latitude, longitude) VALUES ($1, $2, $3, $4) RETURNING *'; 
+      const values = [location.search_query, location.formatted_query, location.latitude, location.longitude]; 
+      clientInformation.query(SQL, values) 
+      .then(data => {
+        store data
+      });
+   });
+  }
+})
+.catch( error => error500(request, response, error ));  
+}
 
 //Weather Handler
 
@@ -60,11 +77,9 @@ function handleWeather(request, response){
     }); 
     response.status(200).send(weatherArr);
   }) 
-  .catch(error => {
-    response.status(500).send('Something went wrong !!!!'); 
-    console.log(error);
-  });
+  .catch( error => error500(request, response, error ));  
 }
+ 
 
 //Trails Handler 
 
@@ -85,11 +100,56 @@ function handleTrails(request, response){
     }); 
     response.status(200).send(trails);
   })
-    .catch(error => {
-    response.status(500).send('Sorry, Something went wrong !'); 
-    console.log(error);
-    });
+  .catch( error => error500(request, response, error ));  
 }
+
+//Movies Handler 
+
+function handleMovies(request, response){
+  const para = {
+    api_key: process.env.MOVIE_API_KEY, 
+    query: request.query.search_query,
+  };  
+  const URL = 'https://api.themoviedb.org/3/search/movie';  
+
+  superagent.get(URL)
+  .query(para)
+  .then(value => {
+    let movies = value.body.results.map(newMovie => {
+      return new movies(newMovie);
+    }); 
+    response.status(200).send(movies);
+  })
+  .catch( error => error500 (request, response, error));
+}
+
+//Yelp Handler
+
+function handleYelp (request, response) {
+  const itemsPerPage = 5; 
+  const page = request.query.page || 1; 
+  const start = ((page - 1) * itemsPerPage + 1);
+
+  const para = {
+    latitude: request.query.latitude,
+    longitude: request.query.longitude 
+    limit: itemsPerPage, 
+    offset: start
+  }; 
+  const URL = 'https://api.yelp.com/v3/businesses/search';
+
+  superagent.get(URL) 
+  .auth(process.env.YELP_API_KEY, {type: 'bearer'})
+  .query(para)
+  .then(value => {
+    let yelp = value.body.business.map(newYelp => {
+      return new yelp(newYelp);
+    });
+    response.status(200).send(yelp)
+  })
+  .catch(error => error500(request, response, error));
+}
+
 
 //Constructor Functions  
 
@@ -124,10 +184,45 @@ function Trail(obj){
   this.condition_time = obj.conditionDate.split(' ')[1]; 
 }
 
+//Movie Constructor
+
+function Movies(obj){ 
+//Not sure where to get the image pathe for the URL
+  this.title = obj.title;
+  this.overview = obj.overview;
+  this.average_votes = obj.vote_average 
+  this.total_votes = obj.vote_count
+  this.image_url = `${imgPath}${obj.poster_path}`;
+  this.popularity = obj.popularity;
+  this.realease_on = obj.realease_date;
+}
+
+//Yelp Constuctor   
+function YELP (obj) {
+  this.name = obj.name;
+  this.image_url =obj.image_url; 
+  this.price = obj.price; 
+  this.rating = obj.rating; 
+  this.url = obj.url;
+}
+
+// Connect Datatbase to Server
+
+client.connect() 
+  .then(()=> {
+    app.listen(PORT, () => {
+      console.log(`It's Alive!`);
+  });
+})
+.catch(error => {
+  console.log('error message', error);
+}); 
+
+//Error Messages 
+
+function notFoundHandler(request, response, error) {
+  res.status(500).send(`Sorry! Didn't work!`);
+  res.status(404).send(`Sorry! It is not here!`)
+}
 
 
-// Make sure the server is listening for requests
-
-app.listen(PORT, () => {
-  console.log(`It's Alive!`);
-});
